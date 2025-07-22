@@ -2,12 +2,12 @@
   "name": "qr-tetris-nextjs",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://borderhub.github.io/qr-tetris",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build && next export",
+    "build": "next build && touch out/.nojekyll",
     "start": "next start",
     "lint": "next lint",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d out"
   },
   "dependencies": {
