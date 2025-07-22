@@ -1,32 +1,22 @@
 @import "tailwindcss";
 
+/*
+ * カスタムCSS変数定義
+ * デフォルト（暗めのテーマ）
+ * prefers-color-scheme: dark の定義は不要になりました。
+ * もしライトテーマもサポートしたい場合は、:root{} の中にライトテーマの変数を記述し、
+ * @media (prefers-color-scheme: dark) { :root { ...ダークテーマの変数... } }
+ * のように記述してください。
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-:root {
-  --background: #0f0f23;
-  --foreground: #ffffff;
-  --card: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.2);
-  --primary: #4CAF50;
-  --primary-hover: #45a049;
-  --secondary: #FFD700;
+  --background: #0f0f23; /* ダークブルーを維持 */
+  --foreground: #e0e0e0; /* 柔らかい白でミニマル */
+  --card: rgba(255, 255, 255, 0.05); /* 透明感を強化 */
+  --border: rgba(255, 255, 255, 0.1); /* ボーダーを控えめに */
+  --primary: #4CAF50; /* 単色の緑 */
+  --primary-hover: #388E3C; /* ホバー時を濃く */
+  --secondary: #FFD700; /* 単色の黄色 */
+  --accent: #b0bec5; /* ソフトグレーで微妙な強調 */
 }
 
 * {
@@ -37,107 +27,123 @@
 
 body {
   color: var(--foreground);
-  background: linear-gradient(135deg, #333333 0%, #ee5e61 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--background); /* 単色でミニマル */
   min-height: 100vh;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px; /* 幅を狭め、シンプルに */
   margin: 0 auto;
-  padding: 20px;
+  padding: 16px;
   text-align: center;
 }
 
 .title {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  font-size: 2.25rem; /* 控えめなサイズ */
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--foreground);
 }
 
 .subtitle {
-  font-size: 1.2rem;
-  margin-bottom: 30px;
-  opacity: 0.9;
+  font-size: 1.1rem;
+  font-weight: 400;
+  margin-bottom: 24px;
+  opacity: 0.7; /* 透明感を強め、軽やかに */
 }
 
 .upload-area {
   background: var(--card);
-  border: 2px dashed var(--border);
-  border-radius: 15px;
-  padding: 40px 20px;
-  margin-bottom: 30px;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  border: 1px dashed var(--border); /* ボーダーを細く */
+  border-radius: 8px; /* 角を控えめに */
+  padding: 32px 16px;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px); /* ブラーを軽減 */
   cursor: pointer;
 }
 
 .upload-area:hover,
 .upload-area.dragover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--primary);
-  transform: scale(1.02);
+  transform: none; /* スケールアニメーションを削除 */
 }
 
 .upload-btn {
-  background: linear-gradient(45deg, var(--primary), var(--primary-hover));
+  background: var(--primary); /* 単色でフラット */
   color: white;
-  padding: 15px 30px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 25px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: none; /* 影を削除 */
 }
 
 .upload-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  background: var(--primary-hover);
+  transform: none; /* ホバー時の浮き上がりなし */
 }
 
 .game-container {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 30px;
+  gap: 24px;
   flex-wrap: wrap;
-  margin-top: 30px;
+  margin-top: 24px;
 }
 
 .game-area {
   background: var(--card);
-  border-radius: 15px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
 }
 
 .controls {
   background: var(--card);
-  border-radius: 15px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
-  max-width: 300px;
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
+  max-width: 280px; /* コンパクトに */
 }
 
 .controls h3 {
   margin-top: 0;
   color: var(--secondary);
+  font-size: 1.25rem;
+  font-weight: 500;
 }
 
 .control-item {
   display: flex;
   justify-content: space-between;
-  margin: 10px 0;
+  margin: 8px 0;
   padding: 8px 12px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
 .place-btn {
   width: 100%;
-  margin-top: 15px;
-  font-size: 1rem;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  background: var(--primary);
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.place-btn:hover {
+  background: var(--primary-hover);
+  transform: none;
 }
 
 .popup {
@@ -145,22 +151,22 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+  background: var(--primary); /* 単色でシンプル */
   color: white;
-  padding: 40px;
-  border-radius: 20px;
-  font-size: 2rem;
-  font-weight: bold;
+  padding: 24px;
+  border-radius: 10px;
+  font-size: 1.75rem;
+  font-weight: 600;
   text-align: center;
   z-index: 1000;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  animation: popupAnimation 0.5s ease-out;
+  transition: all 0.2s ease;
+  animation: popupAnimation 0.3s ease-out;
 }
 
 @keyframes popupAnimation {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
+    transform: translate(-50%, -50%) scale(0.9);
   }
   100% {
     opacity: 1;
@@ -172,44 +178,139 @@ body {
   display: none;
 }
 
-/* 既存のCSSに以下を追加/修正 */
+.reset-btn {
+  background: #e53935; /* 単色の赤 */
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+  width: 100%;
+}
 
+.reset-btn:hover {
+  background: #c62828; /* ホバー時の赤 */
+  transform: none;
+}
+
+.mobile-controls {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+  background: var(--card);
+  padding: 8px;
+  border-radius: 8px 8px 0 0;
+  backdrop-filter: blur(8px);
+}
+
+.controller {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px; /* コンパクトに */
+}
+
+.d-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.horizontal {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn {
+  /* Material UI の Button に委ねるため、最小限のスタイル */
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.control-btn:active {
+  transform: scale(0.98); /* 軽いスケール */
+}
+
+.control-btn.up {
+  margin-bottom: 8px;
+}
+
+.control-btn.down {
+  margin-top: 8px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-btn.place,
+.control-btn.pause,
+.control-btn.reset {
+  width: 100px;
+  font-size: 0.9rem;
+  padding: 6px;
+}
+
+/* レスポンシブデザイン */
 @media (max-width: 768px) {
   .container {
-    padding: 10px;
+    padding: 8px;
   }
 
   .title {
-    font-size: 1.8rem;
+    font-size: 1.75rem;
   }
 
   .subtitle {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .upload-area {
-    padding: 20px;
+    padding: 24px 12px;
   }
 
   .upload-btn {
-    padding: 10px 20px;
+    padding: 8px 16px;
     font-size: 0.9rem;
   }
 
   .game-container {
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    padding-bottom: 100px;
   }
 
   .game-area {
+    margin-bottom: 16px;
     display: flex;
     justify-content: center;
   }
 
   .controls {
-    max-width: 100%;
     width: 100%;
+    max-width: 360px;
+    text-align: center;
   }
 
   .place-btn {
@@ -217,10 +318,10 @@ body {
   }
 
   .popup {
-    padding: 20px;
+    padding: 16px;
     font-size: 1.5rem;
     width: 90%;
-    max-width: 300px;
+    max-width: 280px;
   }
 }
 
@@ -230,7 +331,7 @@ body {
   }
 
   .subtitle {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .game-area {
@@ -238,65 +339,12 @@ body {
   }
 
   .control-item {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 }
 
-/* リセットボタンのスタイル */
-.reset-btn {
-  background: linear-gradient(45deg, #ff4444, #cc0000);
-  color: white;
-  padding: 15px 30px;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  margin-top: 10px;
-  width: 100%;
-}
-
-.reset-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-}
-
-/* タッチボタンのスタイル */
-.touch-controls {
-  display: none;
-  margin-top: 20px;
-  padding: 15px;
-  background: var(--card);
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
-  gap: 10px;
-}
-
-@media (max-width: 768px) {
-  .touch-controls {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-
-  .touch-btn {
-    background: linear-gradient(45deg, var(--primary), var(--primary-hover));
-    color: white;
-    padding: 15px;
-    border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  }
-
-  .touch-btn:hover {
-    transform: scale(1.05);
-  }
-
-  .touch-btn:active {
-    transform: scale(0.95);
+@media (min-width: 769px) {
+  .mobile-controls {
+    display: none;
   }
 }

@@ -1,6 +1,19 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { Box, Button } from '@mui/material'
+import QrCode from '@mui/icons-material/QrCode'
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
+import ArrowRightIcon from '@mui/icons-material/ArrowRight'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import RotateRightIcon from '@mui/icons-material/RotateRight'
+import PlaceIcon from '@mui/icons-material/Place'
+import PauseIcon from '@mui/icons-material/Pause'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import Summarize from '@mui/icons-material/Summarize'
+import AttachFile from '@mui/icons-material/AttachFile'
+import Clear from '@mui/icons-material/Clear'
+import jsQR from 'jsqr' // ★ 変更点 1: jsqrライブラリをインポート
 
 // テトリスピースの定義
 const TETRIS_PIECES = [
@@ -85,38 +98,44 @@ export default function QRTetrisGame() {
   const [gameWidth, setGameWidth] = useState(0)
   const [gameHeight, setGameHeight] = useState(0)
   const [cellSize, setCellSize] = useState(20)
+  const [isMobile, setIsMobile] = useState(false)
   
   const dropInterval = 60
 
-  // cellSizeを動的に計算する関数
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const calculateCellSize = useCallback(() => {
-    if (!gameWidth || !gameHeight) return 20 // 初期値
+    if (!gameWidth || !gameHeight) return 20
 
     const windowWidth = window.innerWidth
-    const maxCanvasWidth = windowWidth * 0.8 // 画面幅の90%を最大とする
-    const maxCanvasHeight = window.innerHeight * 0.6 // 画面高さの60%を最大とする
+    const maxCanvasWidth = windowWidth * 0.8
+    const maxCanvasHeight = window.innerHeight * 0.6
 
-    // gameWidth と gameHeight に基づいて cellSize を計算
     const cellSizeByWidth = maxCanvasWidth / gameWidth
     const cellSizeByHeight = maxCanvasHeight / gameHeight
-    const newCellSize = Math.min(cellSizeByWidth, cellSizeByHeight, 30) // 最大30pxに制限
-    return Math.max(8, Math.floor(newCellSize)) // 最小10pxを保証
+    const newCellSize = Math.min(cellSizeByWidth, cellSizeByHeight, 30)
+    return Math.max(8, Math.floor(newCellSize))
   }, [gameWidth, gameHeight])
 
-  // ウィンドウリサイズ時にcellSizeを更新
   useEffect(() => {
     const handleResize = () => {
       setCellSize(calculateCellSize())
     }
 
-    // デバウンス処理
     let debounceTimer: NodeJS.Timeout
     const debouncedResize = () => {
       clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(handleResize, 100) // 100ms待機
+      debounceTimer = setTimeout(handleResize, 100)
     }
 
-    handleResize() // 初回実行
+    handleResize()
     window.addEventListener('resize', debouncedResize)
     return () => {
       window.removeEventListener('resize', debouncedResize)
@@ -124,15 +143,25 @@ export default function QRTetrisGame() {
     }
   }, [calculateCellSize])
 
-  // QRコード解析
   const analyzeQRCode = useCallback((img: HTMLImageElement) => {
     const tempCanvas = document.createElement('canvas')
-    const ctx = tempCanvas.getContext('2d')!
+    const ctx = tempCanvas.getContext('2d', { willReadFrequently: true })!
     tempCanvas.width = img.width
     tempCanvas.height = img.height
     ctx.drawImage(img, 0, 0)
     
     const imageData = ctx.getImageData(0, 0, img.width, img.height)
+    
+    // QRコードのバリデーションチェック
+    const code = jsQR(imageData.data, imageData.width, imageData.height)
+    if (!code) {
+      alert('QRコードが検出できませんでした。別の画像を試してください。')
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+    
     const data = imageData.data
     
     const size = Math.min(img.width, img.height)
@@ -155,7 +184,6 @@ export default function QRTetrisGame() {
       }
     }
     
-    // 外枠を初期配置
     initializeGameGrid(newQrData, newGameGrid, qrSize)
     
     setQrData(newQrData)
@@ -163,7 +191,10 @@ export default function QRTetrisGame() {
     setGameWidth(qrSize)
     setGameHeight(qrSize)
     setTotalBlocks(countTotalBlocks(newQrData, newGameGrid))
+    setPlacedBlocks(0)
     setGameStarted(true)
+    setGameCompleted(false)
+    setCurrentPiece(null) // 新しいゲーム開始時にピースをリセット
   }, [])
 
   const estimateQRSize = (imageSize: number): number => {
@@ -197,7 +228,6 @@ export default function QRTetrisGame() {
     return count
   }
 
-  // ピース生成
   const generatePiece = useCallback((): GamePiece => {
     const pieceType = TETRIS_PIECES[Math.floor(Math.random() * TETRIS_PIECES.length)]
     
@@ -211,7 +241,6 @@ export default function QRTetrisGame() {
     }
   }, [gameWidth])
 
-  // ピース回転
   const rotatePiece = (piece: GamePiece): GamePiece => {
     const newShape: number[][] = []
     const rows = piece.shape.length
@@ -232,7 +261,6 @@ export default function QRTetrisGame() {
     }
   }
 
-  // 移動可能チェック
   const canMoveToPosition = (piece: GamePiece, newX: number, newY: number): boolean => {
     for (let y = 0; y < piece.height; y++) {
       for (let x = 0; x < piece.width; x++) {
@@ -253,12 +281,11 @@ export default function QRTetrisGame() {
     return true
   }
 
-  // ピース配置
   const placePieceAtCurrentPosition = useCallback(() => {
     if (!currentPiece) return
     
+    const newGameGrid = [...gameGrid.map(row => [...row])]
     let placedAnyBlock = false
-    const newGameGrid = [...gameGrid]
     
     for (let y = 0; y < currentPiece.height; y++) {
       for (let x = 0; x < currentPiece.width; x++) {
@@ -286,32 +313,29 @@ export default function QRTetrisGame() {
     setCurrentPiece(generatePiece())
   }, [currentPiece, gameGrid, qrData, gameWidth, gameHeight, generatePiece])
 
-  // リセット機能
   const resetGame = useCallback(() => {
-    setGameStarted(false)
-    setGameCompleted(false)
-    setCurrentPiece(null)
-    setQrData([])
-    setGameGrid([])
+    // 盤面のみを初期状態に戻す
+    const newGameGrid: number[][] = []
+    for (let y = 0; y < gameHeight; y++) {
+      newGameGrid[y] = Array(gameWidth).fill(0)
+    }
+    initializeGameGrid(qrData, newGameGrid, gameWidth)
+
+    setGameGrid(newGameGrid)
     setPlacedBlocks(0)
-    setTotalBlocks(0)
-    setDropTimer(0)
-    setGameWidth(0)
-    setGameHeight(0)
+    setCurrentPiece(generatePiece())
+    setGameCompleted(false)
     setIsPaused(false)
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setDropTimer(0)
+
     const popup = document.querySelector('.popup')
     if (popup) popup.remove()
-  }, [])
+      // ★ フォーカス対応: ボタンからフォーカスを外し、キャンバスに当てる
+    canvasRef.current?.focus()
+  }, [qrData, gameWidth, gameHeight, generatePiece])
 
-  // タッチ操作ハンドラ
   const handleTouchControl = (action: string) => {
-    if (!currentPiece || isPaused || gameCompleted) return
+    if (!currentPiece || gameCompleted) return
 
     switch (action) {
       case 'left':
@@ -339,15 +363,17 @@ export default function QRTetrisGame() {
         placePieceAtCurrentPosition()
         break
       case 'pause':
-        setIsPaused(prev => !prev)
+        setIsPaused(true)
+        break
+      case 'restart' :
+        setIsPaused(false)
         break
     }
   }
 
-  // キーボード操作
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!currentPiece || isPaused || gameCompleted) return
+      if (!currentPiece || gameCompleted) return
       
       switch (e.code) {
         case 'ArrowLeft':
@@ -376,7 +402,7 @@ export default function QRTetrisGame() {
           break
         case 'Space':
           e.preventDefault()
-          setIsPaused(prev => !prev)
+          setIsPaused(!isPaused)
           break
       }
     }
@@ -385,45 +411,44 @@ export default function QRTetrisGame() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [currentPiece, isPaused, gameCompleted, placePieceAtCurrentPosition])
 
-  // ゲームループ
   useEffect(() => {
-    if (!gameStarted || gameCompleted || !currentPiece) return
-
+    if (!gameStarted || gameCompleted || !currentPiece || isPaused) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      return
+    }
     const gameLoop = () => {
-      if (!isPaused) {
-        setDropTimer(prev => {
-          if (prev >= dropInterval) {
-            if (canMoveToPosition(currentPiece, currentPiece.x, currentPiece.y + 1)) {
-              setCurrentPiece(prev => prev ? {...prev, y: prev.y + 1} : null)
-            } else {
-              placePieceAtCurrentPosition()
-            }
+      setDropTimer(prev => {
+        if (prev >= dropInterval) {
+          if (canMoveToPosition(currentPiece, currentPiece.x, currentPiece.y + 1)) {
+            setCurrentPiece(prev => prev ? {...prev, y: prev.y + 1} : null)
+            return 0
+          } else {
+            placePieceAtCurrentPosition()
             return 0
           }
-          return prev + 1
-        })
-      }
-      
+        }
+        return prev + 1
+      })
       animationFrameRef.current = requestAnimationFrame(gameLoop)
     }
 
     animationFrameRef.current = requestAnimationFrame(gameLoop)
-    
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [gameStarted, gameCompleted, currentPiece, isPaused, placePieceAtCurrentPosition])
-
-  // キャンバス描画
+  }, [gameStarted, gameCompleted, currentPiece, isPaused, placePieceAtCurrentPosition, dropInterval])
+  
   useEffect(() => {
     if (!gameStarted || !canvasRef.current) return
 
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')!
     
-    // キャンバスサイズ設定
     canvas.width = gameWidth * cellSize
     canvas.height = gameHeight * cellSize
     
@@ -432,7 +457,6 @@ export default function QRTetrisGame() {
       ctx.fillStyle = '#f0f0f0'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       
-      // グリッド描画
       for (let y = 0; y < gameHeight; y++) {
         for (let x = 0; x < gameWidth; x++) {
           const px = x * cellSize
@@ -457,7 +481,6 @@ export default function QRTetrisGame() {
         }
       }
       
-      // 現在のピース描画
       if (currentPiece) {
         ctx.fillStyle = `rgba(${currentPiece.color[0]}, ${currentPiece.color[1]}, ${currentPiece.color[2]}, 0.8)`
         ctx.strokeStyle = '#000000'
@@ -476,16 +499,14 @@ export default function QRTetrisGame() {
     }
     
     draw()
-  }, [gameStarted, gameGrid, currentPiece, qrData, gameWidth, gameHeight])
+  }, [gameStarted, gameGrid, currentPiece, qrData, gameWidth, gameHeight, cellSize])
 
-  // 初期ピース生成
   useEffect(() => {
     if (gameStarted && !currentPiece && gameWidth > 0) {
       setCurrentPiece(generatePiece())
     }
   }, [gameStarted, currentPiece, gameWidth, generatePiece])
 
-  // ゲーム完了チェック
   useEffect(() => {
     if (gameCompleted || !gameStarted) return
     
@@ -513,8 +534,11 @@ export default function QRTetrisGame() {
     }
   }, [gameGrid, qrData, gameCompleted, gameStarted, gameHeight, gameWidth])
 
-  // ファイルアップロード処理
   const handleFileUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+        alert('画像ファイルを選択してください。')
+        return;
+    }
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
@@ -539,8 +563,8 @@ export default function QRTetrisGame() {
 
   return (
     <div className="container">
-      <h1 className="title">🎮 QRコードテトリスゲーム</h1>
-      <p className="subtitle">QRコードをアップロードして、ブロックを積み重ねて元の画像を完成させよう！</p>
+      <h1 className="title">QRコードテトリス</h1>
+      <p className="subtitle">QRコードをアップロードして、<br />ブロックを積み重ねて元の画像を完成させよう！</p>
       
       {!gameStarted && (
         <div 
@@ -549,10 +573,10 @@ export default function QRTetrisGame() {
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
         >
-          <p style={{ fontSize: '1.3rem', marginBottom: '20px' }}>📱 QRコードの画像をここにドラッグ＆ドロップ</p>
+          <p style={{ fontSize: '1.3rem', marginBottom: '20px' }}><QrCode /> QRコードの画像をここにドラッグ＆ドロップ</p>
           <p style={{ marginBottom: '20px' }}>または</p>
           <button className="upload-btn">
-            📁 ファイルを選択
+            <AttachFile /> ファイルを選択
           </button>
           <input
             ref={fileInputRef}
@@ -567,44 +591,49 @@ export default function QRTetrisGame() {
       {gameStarted && (
         <div className="game-container">
           <div className="game-area">
-            <canvas ref={canvasRef} />
+            {/* ★ フォーカス対応: tabIndexを追加してフォーカス可能にする */}
+            <canvas ref={canvasRef} tabIndex={-1} />
           </div>
           <div className="controls">
-            <h3>🎮 操作方法</h3>
-            <div className="control-item">
-              <span>左右移動</span>
-              <span>← →</span>
-            </div>
-            <div className="control-item">
-              <span>回転</span>
-              <span>↑</span>
-            </div>
-            <div className="control-item">
-              <span>高速落下</span>
-              <span>↓</span>
-            </div>
-            <div className="control-item">
-              <span>配置決定</span>
-              <span>Enter</span>
-            </div>
-            <div className="control-item">
-              <span>一時停止</span>
-              <span>Space</span>
-            </div>
-            <button 
-              className="upload-btn place-btn"
-              onClick={placePieceAtCurrentPosition}
-            >
-              📍 配置決定
-            </button>
-            <button 
-              className="reset-btn"
-              onClick={resetGame}
-            >
-              🔄 リセット
-            </button>
+          {!isMobile && <div>
+              <h3>操作方法</h3>
+              <>
+                <div className="control-item">
+                  <span>左右移動</span>
+                  <span>← →</span>
+                </div>
+                <div className="control-item">
+                  <span>回転</span>
+                  <span>↑</span>
+                </div>
+                <div className="control-item">
+                  <span>高速落下</span>
+                  <span>↓</span>
+                </div>
+                <div className="control-item">
+                  <span>配置決定</span>
+                  <span>Enter</span>
+                </div>
+                <div className="control-item">
+                  <span>一時停止</span>
+                  <span>Space</span>
+                </div>
+              </>
+              <button 
+                className="upload-btn place-btn"
+                onClick={placePieceAtCurrentPosition}
+              >
+                配置決定
+              </button>
+              <button 
+                className="reset-btn"
+                onClick={resetGame}
+              >
+                リセット
+              </button>
+            </div>}
             <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px' }}>
-              <h4 style={{ marginTop: 0, color: 'var(--secondary)' }}>📊 統計</h4>
+              <h4 style={{ marginTop: 0, color: 'var(--secondary)' }}><Summarize /> 統計</h4>
               <div className="control-item">
                 <span>配置済み</span>
                 <span>{placedBlocks}</span>
@@ -619,6 +648,92 @@ export default function QRTetrisGame() {
               </div>
             </div>
           </div>
+          {isMobile && (
+            <div className="mobile-controls">
+              <div className="controller">
+                <div className="d-pad">
+                  <Button
+                    className="control-btn up"
+                    variant="contained"
+                    color="primary"
+                    onTouchStart={() => handleTouchControl('rotate')}
+                  >
+                    <RotateRightIcon />
+                  </Button>
+                  <div className="horizontal">
+                    <Button
+                      className="control-btn left"
+                      variant="contained"
+                      color="primary"
+                      onTouchStart={() => handleTouchControl('left')}
+                    >
+                      <ArrowLeftIcon />
+                    </Button>
+                    <Button
+                      className="control-btn down"
+                      variant="contained"
+                      color="primary"
+                      onTouchStart={() => handleTouchControl('down')}
+                    >
+                      <ArrowDownwardIcon />
+                    </Button>
+                    <Button
+                      className="control-btn right"
+                      variant="contained"
+                      color="primary"
+                      onTouchStart={() => handleTouchControl('right')}
+                    >
+                      <ArrowRightIcon />
+                    </Button>
+                  </div>
+                </div>
+                <div className="action-buttons">
+                  <Button
+                    className="control-btn place"
+                    variant="contained"
+                    color="primary"
+                    onTouchStart={() => handleTouchControl('place')}
+                  >
+                    <Box component="span" sx={{ mr: 0.5 }}>
+                      <PlaceIcon />
+                    </Box> 配置
+                  </Button>
+                  <Button 
+                    className="control-btn reset"
+                    variant="contained"
+                    color="primary"
+                    onTouchStart={resetGame}
+                  >
+                    <Box component="span" sx={{ mr: 0.5 }}>
+                      <Clear />
+                    </Box> リセット
+                  </Button>
+                  <Button
+                    className="control-btn pause"
+                    variant="contained"
+                    color="primary"
+                    onTouchStart={() => handleTouchControl(isPaused ? 'restart' : 'pause')}
+                  >
+                    {isPaused ? (
+                      <>
+                        <Box component="span" sx={{ mr: 0.5 }}>
+                          <PlayArrowIcon />
+                        </Box>
+                        再開
+                      </>
+                    ) : (
+                      <>
+                        <Box component="span" sx={{ mr: 0.5 }}>
+                          <PauseIcon />
+                        </Box>
+                        一時停止
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
