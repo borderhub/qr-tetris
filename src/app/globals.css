@@ -251,17 +251,17 @@ body {
 }
 
 .control-btn.up {
-  margin-bottom: 8px;
+  margin-bottom: 0px;
 }
 
 .control-btn.down {
-  margin-top: 8px;
+  margin-top: 28px;
 }
 
 .action-buttons {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .control-btn.place,
